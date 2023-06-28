@@ -2882,14 +2882,12 @@ partial interface MLGraphBuilder {
     1. If |options|.{{MLGruOptions/activations}} [=map/exists=] and is not an array of size `2`, or if any of its elements is not an instance of {{MLActivation}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
     1. If |steps| is not a [=number=] or it is `0`, then throw a "{{TypeError}}" {{DOMException}} and stop.
     1. Let |output| be an empty sequence of {{MLOperand}} objects.
-    1. Make a request to the underlying platform to register |output| as output for the operation.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for `"gru"` with |input| connected as input, |output| connected as output, |weight|, |recurrentWeight|, |steps|, |hiddenSize| and |options| connected as parameters.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for `"gru"`, given |weight|, |recurrentWeight|, |steps|, |hiddenSize| and |options| as parameters.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output| as output to |opImpl|.
     1. Return |output|.
-        <div class="note">
-            Using the {{MLGraphBuilder/gruCell()}} steps here is under consideration.
-        </div>
   </div>
 </details>
 
@@ -2915,11 +2913,11 @@ partial interface MLGraphBuilder {
     let currentRecurrentBias = [];
 
     for (let dir = 0; dir < numDirections; ++dir) {
-      currentWeight.push(builder.squeeze(builder.slice(weight, [dir, 0, 0], [1, -1, -1]), { axes: [0] }));
-      currentRecurrentWeight.push(builder.squeeze(builder.slice(recurrentWeight, [dir, 0, 0], [1, -1, -1]), { axes: [0] }));
-      currentBias.push(options.bias ? (builder.squeeze(builder.slice(options.bias, [dir, 0], [1, -1]), { axes: [0] })) : null);
+      currentWeight.push(builder.squeeze(builder.slice(weight, [dir, 0, 0], [1, 3 * hidden_size, input_size]), { axes: [0] }));
+      currentRecurrentWeight.push(builder.squeeze(builder.slice(recurrentWeight, [dir, 0, 0], [1, 3 * hidden_size, hidden_size]), { axes: [0] }));
+      currentBias.push(options.bias ? (builder.squeeze(builder.slice(options.bias, [dir, 0], [1, 3 * hidden_size]), { axes: [0] })) : null);
       currentRecurrentBias.push(options.recurrentBias ?
-        (builder.squeeze(builder.slice(options.recurrentBias, [dir, 0], [1, -1]), { axes: [0] })) : null);
+        (builder.squeeze(builder.slice(options.recurrentBias, [dir, 0], [1, 3 * hidden_size]), { axes: [0] })) : null);
     }
 
     for (let step = 0; step < steps; ++step) {
@@ -2927,12 +2925,12 @@ partial interface MLGraphBuilder {
       let currentOutput = null;
 
       for (let dir = 0; dir < numDirections; ++dir) {
-        currentHidden.push(builder.squeeze(builder.slice(hiddenState, [dir, 0, 0], [1, -1, -1]), { axes: [0] }));
+        currentHidden.push(builder.squeeze(builder.slice(hiddenState, [dir, 0, 0], [1, batch_size, hidden_size]), { axes: [0] }));
       }
 
       for (let dir = 0; dir < numDirections; ++dir) {
         let slice = (dir == 1 || options.direction == "backward" ? steps - step - 1 : step);
-        let currentInput = builder.squeeze(builder.slice(input, [slice, 0, 0], [1, -1, -1]), { axes: [0] });
+        let currentInput = builder.squeeze(builder.slice(input, [slice, 0, 0], [1, batch_size, input_size]), { axes: [0] });
 
         let result = builder.reshape(
           builder.gruCell(
@@ -2940,7 +2938,7 @@ partial interface MLGraphBuilder {
             currentHidden[dir], hiddenSize, { bias: currentBias[dir],
             recurrentBias: currentRecurrentBias[dir], resetAfter: options.resetAfter,
             layout: options.layout, activations: options.activations }),
-          [1, -1, hiddenSize]);
+          [1, null, hiddenSize]);
 
         currentOutput = (currentOutput ? builder.concat([currentOutput, result], 0) : result);
       }
@@ -2948,7 +2946,7 @@ partial interface MLGraphBuilder {
       hiddenState = currentOutput;
 
       if (options.returnSequence) {
-        currentOutput = builder.reshape(currentOutput, [1, numDirections, -1, hiddenSize]);
+        currentOutput = builder.reshape(currentOutput, [1, numDirections, null, hiddenSize]);
         sequence = (sequence ? builder.concat([sequence, currentOutput], 0) : currentOutput);
       }
     }
@@ -3034,12 +3032,15 @@ partial interface MLGraphBuilder {
     1. Let |desc| a new {{MLOperandDescriptor}}.
     1. Set |desc|.{{MLOperandDescriptor/dimensions}} to [ |input|.{{MLOperandDescriptor/dimensions}}[0], |hiddenSize| ].
     1. Set |desc|.{{MLOperandDescriptor/type}} to |input|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/type}}.
-    1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=], `"output"` and |desc|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |operand|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for `"gruCell"` with |input| connected as input, |output| connected as output, |weight|, |recurrentWeight|, |hiddenState|, |hiddenSize|, |options| connected as parameters and store a reference of the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |desc|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for `"gruCell"`, given |weight|, |recurrentWeight|, |hiddenState|, |hiddenSize| and |options| as parameters.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -3063,11 +3064,11 @@ partial interface MLGraphBuilder {
         builder.add(
           builder.matmul(
             input,
-            builder.transpose(builder.slice(weight, [0, 0], [hiddenSize, -1]))
+            builder.transpose(builder.slice(weight, [0, 0], [hiddenSize, input_size]))
             ),
           builder.matmul(
             hiddenState,
-            builder.transpose(builder.slice(recurrentWeight, [0, 0], [hiddenSize, -1]))
+            builder.transpose(builder.slice(recurrentWeight, [0, 0], [hiddenSize, hidden_size]))
             )
           )
         )
@@ -3083,11 +3084,11 @@ partial interface MLGraphBuilder {
         builder.add(
           builder.matmul(
             input,
-            builder.transpose(builder.slice(weight, [hiddenSize, 0], [hiddenSize, -1]))
+            builder.transpose(builder.slice(weight, [hiddenSize, 0], [hiddenSize, input_size]))
             ),
           builder.matmul(
             hiddenState,
-            builder.transpose(builder.slice(recurrentWeight, [hiddenSize, 0], [hiddenSize, -1]))
+            builder.transpose(builder.slice(recurrentWeight, [hiddenSize, 0], [hiddenSize, hidden_size]))
             )
           )
         )
@@ -3102,7 +3103,7 @@ partial interface MLGraphBuilder {
           builder.add(
             builder.matmul(
               input,
-              builder.transpose(builder.slice(weight, [2 * hiddenSize, 0], [hiddenSize, -1]))
+              builder.transpose(builder.slice(weight, [2 * hiddenSize, 0], [hiddenSize, input_size]))
               ),
             builder.mul(
               r,
@@ -3110,7 +3111,7 @@ partial interface MLGraphBuilder {
                 (options.recurrentBias ? builder.slice(options.recurrentBias, [2 * hiddenSize], [hiddenSize]) : zero),
                 builder.matmul(
                   hiddenState,
-                  builder.transpose(builder.slice(recurrentWeight, [2 * hiddenSize, 0], [hiddenSize, -1]))
+                  builder.transpose(builder.slice(recurrentWeight, [2 * hiddenSize, 0], [hiddenSize, hidden_size]))
                   )
                 )
               )
@@ -3128,11 +3129,11 @@ partial interface MLGraphBuilder {
           builder.add(
             builder.matmul(
               input,
-              builder.transpose(builder.slice(weight, [2 * hiddenSize, 0], [hiddenSize, -1]))
+              builder.transpose(builder.slice(weight, [2 * hiddenSize, 0], [hiddenSize, input_size]))
               ),
             builder.matmul(
               builder.mul(r, hiddenState),
-              builder.transpose(builder.slice(recurrentWeight, [2 * hiddenSize, 0], [hiddenSize, -1]))
+              builder.transpose(builder.slice(recurrentWeight, [2 * hiddenSize, 0], [hiddenSize, hidden_size]))
               )
             )
           )
@@ -3146,7 +3147,7 @@ partial interface MLGraphBuilder {
 </div>
 
 ### The hardSigmoid() method ### {#api-mlgraphbuilder-hard-sigmoid}
-Calculate the <a href="https://en.wikipedia.org/wiki/Hard_sigmoid">hard sigmoid function</a> on the input tensor, used instead of the sigmoid function for faster computation.
+Calculate the non-smooth <a href="https://en.wikipedia.org/wiki/Hard_sigmoid">hard sigmoid function</a> on the input tensor, used instead of the sigmoid function for faster computation.
 <script type=idl>
 dictionary MLHardSigmoidOptions {
   float alpha = 0.2;
@@ -3208,18 +3209,23 @@ partial interface MLGraphBuilder {
         - *options*: an optional {{MLHardSigmoidOptions}}. The optional parameters of the operation.
 
     **Returns:**
-        - an {{MLOperand}}. The output tensor of the same shape as *x*.
+        - an {{MLOperand}}. The output tensor of the same shape as *input*.
 </div>
 <div algorithm=hardsigmoid-input-options class=algorithm-steps>
     The {{MLGraphBuilder/hardSigmoid(input, options)}} method steps are:
     1. Let |input| be the first argument.
     1. Let |options| be the second argument.
         1. If running the <a>check hard-sigmoid options</a> steps with |options| returns `false`, then throw a "{{TypeError}}" {{DOMException}} and abort these steps.
-    1. Let |result| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |result| with the [=implementation-defined=] platform operator for the hard-sigmoid function, and store a reference to the resulting [=implementation-defined=] platform operand object in |result|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
-    1. Return |result|.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the hard sigmoid operation, given |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
 </div>
 
 #### The {{MLGraphBuilder/hardSigmoid(options)}} method #### {#api-mlgraphbuilder-hardsigmoid-options}
@@ -3240,18 +3246,12 @@ partial interface MLGraphBuilder {
         1. If running the <a>check hard-sigmoid options</a> steps with |options| returns `false`, then throw a "{{TypeError}}" {{DOMException}} and abort these steps.
     1. Let |op| be the result of invoking the <a>create MLActivation</a> steps with `"hardSigmoid"` and |options|.
         1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |op| with the [=implementation-defined=] platform operator for the hard-sigmoid function, and store a reference of the resulting [=implementation-defined=] platform operator object in |op|.{{MLActivation/[[operator]]}}.
-        <div class="note">
-            This step does not execute the operation yet, it just prepares the operator.
-        </div>
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
     1. Return |op|.
   </div>
 </details>
 
 ### The hardSwish() method ### {#api-mlgraphbuilder-hard-swish}
-Computes the nonlinear function `y = x * max(0, min(6, (x + 3))) / 6` (introduced by [[MobileNetV3]]) element-wise on the input tensor.
-
+Computes the nonlinear function `y = x * max(0, min(6, (x + 3))) / 6` that is introduced by [[MobileNetV3]] on the input tensor element-wise.
 <script type=idl>
 partial interface MLGraphBuilder {
   MLOperand hardSwish(MLOperand input);
@@ -3296,11 +3296,16 @@ partial interface MLGraphBuilder {
   </summary>
   <div algorithm=hardswish-input class=algorithm-steps>
     1. Let |input| be the first argument.
-    1. Let |result| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |result| with the [=implementation-defined=] platform operator for the hard-swish function, and store a reference to the resulting [=implementation-defined=] platform operand object in |result|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
-    1. Return |result|.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the hard-swish operation.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
   </div>
 </details>
 
@@ -3320,11 +3325,6 @@ partial interface MLGraphBuilder {
   <div algorithm=hard-swish class=algorithm-steps>
     1. Let |op| be the result of invoking the <a>create MLActivation</a> steps with `"hardSwish"`.
         1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |op| with the [=implementation-defined=] platform operator for the hard-swish function, and store a reference of the resulting [=implementation-defined=] platform operator object in |op|.{{MLActivation/[[operator]]}}.
-        <div class="note">
-            This step does not execute the operation yet, it just prepares the operator.
-        </div>
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
     1. Return |op|.
  </div>
 </details>
@@ -3389,12 +3389,15 @@ The {{MLInstanceNormalizationOptions}} members are:
     1. If |options|.{{MLInstanceNormalizationOptions/epsilon}} is `undefined`, let it be `0.00001`.
     1. If |options|.{{MLInstanceNormalizationOptions/layout}} is `undefined`, let it be `"nchw"`.
     1. Otherwise if |options|.{{MLInstanceNormalizationOptions/layout}} is not one of {{MLInputOperandLayout}}, then throw a "{{DataError}}" {{DOMException}} and stop.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and stop.
-    1. Make a request to the underlying platform to register |output| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |output|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] instance normalization operator with |input| connected as input, |options| specified as options,  |output| connected as output and to store a reference to the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the instance normalization operation, given |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -3420,7 +3423,7 @@ The {{MLInstanceNormalizationOptions}} members are:
 
     // The scale and bias values are applied per input feature
     // e.g. axis 1 of the input tensor.
-    const shape = [1,-1,1,1];
+    const shape = [1,null,1,1];
     return builder.add(
       builder.mul(
         builder.reshape(options.scale, shape),
@@ -3489,7 +3492,7 @@ partial interface MLGraphBuilder {
         - *options*: an optional {{MLLeakyReluOptions}}. The optional parameters of the operation.
 
     **Returns:**
-        - an {{MLOperand}}. The output tensor of the same shape as *x*.
+        - an {{MLOperand}}. The output tensor of the same shape as *input*.
 </div>
 
 <details open>
@@ -3501,11 +3504,16 @@ partial interface MLGraphBuilder {
     1. Let |options| be the second argument.
         1. If |options| is `undefined`, let |options| be a new {{MLLeakyReluOptions}} object.
         1. If running the <a>check leaky-relu options</a> steps with |options| returns `false`, then throw a "{{TypeError}}" {{DOMException}} and abort these steps.
-    1. Let |result| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |result| with the [=implementation-defined=] platform operator for the leaky RELU function, and store a reference to the resulting [=implementation-defined=] platform operand object in |result|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
-    1. Return |result|.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the Leaky RELU operation, given |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
   </div>
 </details>
 
@@ -3528,11 +3536,6 @@ partial interface MLGraphBuilder {
         1. If running the <a>check leaky-relu options</a> steps with |options| returns `false`, then throw a "{{TypeError}}" {{DOMException}} and abort these steps.
     1. Let |op| be the result of invoking the <a>create MLActivation</a> steps with `"leakyRelu"` and |options|.
         1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |op| with the [=implementation-defined=] platform operator for the leaky RELU function, and store a reference of the resulting [=implementation-defined=] platform operator object in |op|.{{MLActivation/[[operator]]}}.
-        <div class="note">
-            This step does not execute the operation yet, it just prepares the operator.
-        </div>
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
     1. Return |op|.
   </div>
 </details>
@@ -3608,11 +3611,16 @@ partial interface MLGraphBuilder {
     1. Let |input| be the first argument.
     1. Let |options| be the second argument.
         1. If running the <a>check linear options</a> steps with |options| returns `false`, then throw a "{{TypeError}}" {{DOMException}} and abort these steps.
-    1. Let |result| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |result| with the [=implementation-defined=] platform operator for the linear function, and store a reference to the resulting [=implementation-defined=] platform operand object in |result|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
-    1. Return |result|.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the linear operation, given |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
   </div>
 </details>
 
@@ -3634,11 +3642,6 @@ partial interface MLGraphBuilder {
         1. If running the <a>check linear options</a> steps with |options| returns `false`, then throw a "{{TypeError}}" {{DOMException}} and abort these steps.
     1. Let |op| be the result of invoking the <a>create MLActivation</a> steps with `"linear"` and |options|.
         1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |op| with the [=implementation-defined=] platform operator for the linear function, and store a reference of the resulting [=implementation-defined=] platform operator object in |op|.{{MLActivation/[[operator]]}}.
-        <div class="note">
-            This step does not execute the operation yet, it just prepares the operator.
-        </div>
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
     1. Return |op|.
   </div>
 </details>
@@ -3713,13 +3716,13 @@ partial interface MLGraphBuilder {
 <div>
     **Arguments:**
         - *input*: an {{MLOperand}}. The input 3-D tensor of shape [steps, batch_size, input_size].
-        - *weight*: an {{MLOperand}}. The 3-D input weight tensor of shape [num_directions, 4 * hidden_size, input_size]. The ordering of the weight vectors in the second dimension of the tensor shape is specified according to the {{MLLstmOptions/layout}}.
-        - *recurrentWeight*: an {{MLOperand}}. The 3-D recurrent weight tensor of shape [num_directions, 4 * hidden_size, hidden_size]. The ordering of the weight vectors in the second dimension of the tensor shape is specified according to the *options.layout* argument.
+        - *weight*: an {{MLOperand}}. The 3-D input weight tensor of shape [num_directions, 4 * hidden_size, input_size]. The ordering of the weight vectors in the second dimension of the tensor shape is specified according to the |options|.{{MLLstmOptions/layout}}.
+        - *recurrentWeight*: an {{MLOperand}}. The 3-D recurrent weight tensor of shape [num_directions, 4 * hidden_size, hidden_size]. The ordering of the weight vectors in the second dimension of the tensor shape is specified according to the |options|.{{MLLstmOptions/layout}} argument.
         - *steps*: an {{unsigned long}} scalar. The number of time steps in the recurrent network. The value must be greater than 0.
         - *hiddenSize*: an {{unsigned long}} scalar. The value of the third dimension of the cell output tensor shape. It indicates the number of features in the hidden state.
         - *options*: an optional {{MLLstmOptions}}. The optional parameters of the operation.
 
-    **Returns:** a sequence of {{MLOperand}}. The first element of the sequence is a 3-D tensor of shape [num_directions, batch_size, hidden_size], the output hidden state from the last time step of the network. The second element is a 3-D tensor of shape [num_directions, batch_size, hidden_size], the output cell state from the last time step of the network. Additionally, if *options.returnSequence* is set to true, the third element is the 4-D output tensor of shape [steps, num_directions, batch_size, hidden_size] containing every output from each time step in the temporal sequence.
+    **Returns:** a sequence of {{MLOperand}}. The first element of the sequence is a 3-D tensor of shape [num_directions, batch_size, hidden_size], the output hidden state from the last time step of the network. The second element is a 3-D tensor of shape [num_directions, batch_size, hidden_size], the output cell state from the last time step of the network. Additionally, if |options|.{{MLLstmOptions/returnSequence}} is set to true, the third element is the 4-D output tensor of shape [steps, num_directions, batch_size, hidden_size] containing every output from each time step in the temporal sequence.
 </div>
 
 <details open>
@@ -3770,25 +3773,22 @@ partial interface MLGraphBuilder {
     1. If |options|.{{MLLstmOptions/activations}} [=map/exists=]:
         1. If it is not an array of size `3`, then throw a "{{TypeError}}" {{DOMException}} and stop.
         1. If any of its elements is not an instance of {{MLActivation}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
-    1. Let |desc| a new {{MLOperandDescriptor}}.
-    1. Set |desc|.{{MLOperandDescriptor/dimensions}} to [ |nume_directions|, |batch_size|, |hiddenSize| ].
-    1. Set |desc|.{{MLOperandDescriptor/type}} to |input|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/type}}.
-    1. Let |output0| be the result of invoking the <a>create MLOperand</a> steps given [=this=], `"output"` and |desc|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output0| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |output0|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Let |output1| be the result of invoking the <a>create MLOperand</a> steps given [=this=], `"output"` and |desc|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output1| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |output1|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Set |desc|.{{MLOperandDescriptor/dimensions}} to [ |steps|, |nume_directions|, |batch_size|, |hiddenSize| ].
-    1. Let |output2| be the result of invoking the <a>create MLOperand</a> steps given [=this=], `"output"` and |desc|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output2| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |output2|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Let |output| be the array [ |output0|, |output1|, |output2 ].
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for `"lstm"` with |input| connected as input, |output| connected as output, |weight|, |recurrentWeight|, |steps|, |hiddenSize| and |options| connected as parameters and store a reference of the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |desc| a new {{MLOperandDescriptor}}.
+        1. Set |desc|.{{MLOperandDescriptor/dimensions}} to [ |nume_directions|, |batch_size|, |hiddenSize| ].
+        1. Set |desc|.{{MLOperandDescriptor/type}} to |input|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/type}}.
+        1. Let |output0| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |desc|.
+        1. Let |output1| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |desc|.
+        1. Set |desc|.{{MLOperandDescriptor/dimensions}} to [ |steps|, |nume_directions|, |batch_size|, |hiddenSize| ].
+        1. Let |output2| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |desc|.
+        1. Let |output| be the array [ |output0|, |output1|, |output2 ].
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the LSTM operation, given |weight|, |recurrentWeight|, |steps|, |hiddenSize| and |options|.
+            1. Store a reference of |opImpl| in |output0|.{{MLOperand/[[operator]]}}, |output1|.{{MLOperand/[[operator]]}} and |output2|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output0|.{{MLOperand/[[operand]]}}, |output1|.{{MLOperand/[[operand]]}} and |output2|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output| as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -3823,13 +3823,13 @@ partial interface MLGraphBuilder {
     let currentPeepholeWeight = [];
 
     for (let dir = 0; dir < numDirections; ++dir) {
-      currentWeight.push(builder.squeeze(builder.slice(weight, [dir, 0, 0], [1, -1, -1]), { axes: [0] }));
-      currentRecurrentWeight.push(builder.squeeze(builder.slice(recurrentWeight, [dir, 0, 0], [1, -1, -1]), { axes: [0] }));
-      currentBias.push(options.bias ? (builder.squeeze(builder.slice(options.bias, [dir, 0], [1, -1]), { axes: [0] })) : null);
+      currentWeight.push(builder.squeeze(builder.slice(weight, [dir, 0, 0], [1, 4 * hidden_size, input_size]), { axes: [0] }));
+      currentRecurrentWeight.push(builder.squeeze(builder.slice(recurrentWeight, [dir, 0, 0], [1, 4 * hidden_size, hidden_size]), { axes: [0] }));
+      currentBias.push(options.bias ? (builder.squeeze(builder.slice(options.bias, [dir, 0], [1, 4 * hidden_size]), { axes: [0] })) : null);
       currentRecurrentBias.push(options.recurrentBias ?
-        (builder.squeeze(builder.slice(options.recurrentBias, [dir, 0], [1, -1]), { axes: [0] })) : null);
+        (builder.squeeze(builder.slice(options.recurrentBias, [dir, 0], [1, 4 * hidden_size]), { axes: [0] })) : null);
       currentPeepholeWeight.push(options.peepholeWeight ?
-        (builder.squeeze(builder.slice(options.peepholeWeight, [dir, 0], [1, -1]), { axes: [0] })) : null);
+        (builder.squeeze(builder.slice(options.peepholeWeight, [dir, 0], [1, 3 * hidden_size]), { axes: [0] })) : null);
     }
 
     for (let step = 0; step < steps; ++step) {
@@ -3839,13 +3839,13 @@ partial interface MLGraphBuilder {
       let nextCell = null;
 
       for (let dir = 0; dir < numDirections; ++dir) {
-        currentHidden.push(builder.squeeze(builder.slice(hiddenState, [dir, 0, 0], [1, -1, -1]), { axes: [0] }));
-        currentCell.push(builder.squeeze(builder.slice(cellState, [dir, 0, 0], [1, -1, -1]), { axes: [0] }));
+        currentHidden.push(builder.squeeze(builder.slice(hiddenState, [dir, 0, 0], [1, batch_size, hidden_size]), { axes: [0] }));
+        currentCell.push(builder.squeeze(builder.slice(cellState, [dir, 0, 0], [1, batch_size, hidden_size]), { axes: [0] }));
       }
 
       for (let dir = 0; dir < numDirections; ++dir) {
         let slice = (dir == 1 || options.direction == "backward" ? steps - step - 1 : step);
-        let currentInput = builder.squeeze(builder.slice(input, [slice, 0, 0], [1, -1, -1]), { axes: [0] });
+        let currentInput = builder.squeeze(builder.slice(input, [slice, 0, 0], [1, batch_size, input_size]), { axes: [0] });
 
         let results = builder.lstmCell(
           currentInput, currentWeight[dir], currentRecurrentWeight[dir],
@@ -3853,18 +3853,18 @@ partial interface MLGraphBuilder {
           recurrentBias: currentRecurrentBias[dir], peepholeWeight: currentPeepholeWeight[dir],
           layout: options.layout, activations: options.activations });
 
-        let output = builder.reshape(results[0], [1, -1, hiddenSize]);
-        let cell = builder.reshape(results[1], [1, -1, hiddenSize]);
+        let output = builder.reshape(results[0], [1, null, hiddenSize]);
+        let cell = builder.reshape(results[1], [1, null, hiddenSize]);
 
-        nextHidden = (nextHidden ? builder.concat([nextHidden, result], 0) : output);
-        nextCell = (nextCell ? builder.concat([nextCell, result], 0) : cell);
+        nextHidden = (nextHidden ? builder.concat([nextHidden, output], 0) : output);
+        nextCell = (nextCell ? builder.concat([nextCell, cell], 0) : cell);
       }
 
       hiddenState = nextHidden;
       cellState = nextCell;
 
       if (options.returnSequence) {
-        nextHidden = builder.reshape(nextHidden, [1, numDirections, -1, hiddenSize]);
+        nextHidden = builder.reshape(nextHidden, [1, numDirections, null, hiddenSize]);
         sequence = (sequence ? builder.concat([sequence, nextHidden], 0) : nextHidden);
       }
     }
@@ -3958,17 +3958,17 @@ partial interface MLGraphBuilder {
     1. Let |desc| a new {{MLOperandDescriptor}}.
     1. Set |desc|.{{MLOperandDescriptor/dimensions}} to [ |batch_size|, |hiddenSize| ].
     1. Set |desc|.{{MLOperandDescriptor/type}} to |input|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/type}}.
-    1. Let |output0| be the result of invoking the <a>create MLOperand</a> steps given [=this=], `"output"` and |desc|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output0| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |output0|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Let |output1| be the result of invoking the <a>create MLOperand</a> steps given [=this=], `"output"` and |desc|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output1| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |output1|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Let |output| be the array [ |output0|, |output1| ].
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for `"lstmCell"` with |input| connected as input, |output| connected as output, |weight|, |recurrentWeight|, |hiddenState|, |cellState|, |hiddenSize|, |options| connected as parameters and store a reference of the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output0| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |desc|.
+        1. Let |output1| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |desc|.
+        1. Let |output| be the array [ |output0|, |output1| ].
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the LSTM cell operation, given |weight|, |recurrentWeight|, |hiddenState|, |cellState|, |hiddenSize| and |options|.
+            1. Store a reference of |opImpl| in |output0|.{{MLOperand/[[operator]]}} and |output1|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output0|.{{MLOperand/[[operand]]}} and |output1|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output| as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -3996,11 +3996,11 @@ partial interface MLGraphBuilder {
           builder.add(
             builder.matmul(
               input,
-              builder.transpose(builder.slice(weight, [0, 0], [hiddenSize, -1]))
+              builder.transpose(builder.slice(weight, [0, 0], [hiddenSize, input_size]))
             ),
             builder.matmul(
               hiddenState,
-              builder.transpose(builder.slice(recurrentWeight, [0, 0], [hiddenSize, -1]))
+              builder.transpose(builder.slice(recurrentWeight, [0, 0], [hiddenSize, hidden_size]))
             )
           )
         )
@@ -4022,11 +4022,11 @@ partial interface MLGraphBuilder {
           builder.add(
             builder.matmul(
               input,
-              builder.transpose(builder.slice(weight, [2 * hiddenSize, 0], [hiddenSize, -1]))
+              builder.transpose(builder.slice(weight, [2 * hiddenSize, 0], [hiddenSize, input_size]))
             ),
             builder.matmul(
               hiddenState,
-              builder.transpose(builder.slice(recurrentWeight, [2 * hiddenSize, 0], [hiddenSize, -1]))
+              builder.transpose(builder.slice(recurrentWeight, [2 * hiddenSize, 0], [hiddenSize, hidden_size]))
             )
           )
         )
@@ -4043,11 +4043,11 @@ partial interface MLGraphBuilder {
         builder.add(
           builder.matmul(
             input,
-            builder.transpose(builder.slice(weight, [3 * hiddenSize, 0], [hiddenSize, -1]))
+            builder.transpose(builder.slice(weight, [3 * hiddenSize, 0], [hiddenSize, input_size]))
           ),
           builder.matmul(
             hiddenState,
-            builder.transpose(builder.slice(recurrentWeight, [3 * hiddenSize, 0], [hiddenSize, -1]))
+            builder.transpose(builder.slice(recurrentWeight, [3 * hiddenSize, 0], [hiddenSize, hidden_size]))
           )
         )
       )
@@ -4068,11 +4068,11 @@ partial interface MLGraphBuilder {
           builder.add(
             builder.matmul(
               input,
-              builder.transpose(builder.slice(weight, [hiddenSize, 0], [hiddenSize, -1]))
+              builder.transpose(builder.slice(weight, [hiddenSize, 0], [hiddenSize, input_size]))
             ),
             builder.matmul(
               hiddenState,
-              builder.transpose(builder.slice(recurrentWeight, [hiddenSize, 0], [hiddenSize, -1]))
+              builder.transpose(builder.slice(recurrentWeight, [hiddenSize, 0], [hiddenSize, hidden_size]))
             )
           )
         )
@@ -4142,13 +4142,16 @@ partial interface MLGraphBuilder {
     1. Let |desc| a new {{MLOperandDescriptor}}.
     1. Set |desc|.{{MLOperandDescriptor/dimensions}} to the result of invoking the <a>calculate matmul output sizes</a> given |a| and |b|.
     1. Set |desc|.{{MLOperandDescriptor/type}} to |a|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/type}}.
-    1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=], `"output"` and |desc|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |operand|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for `"matmul"` with |a| and |b| connected as inputs and |output| connected as output and store a reference of the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-    1. Return |operand|.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |desc|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the matrix multiplication operation.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |a|.{{MLOperand/[[operand]]}} and |b|.{{MLOperand/[[operand]]}} as inputs to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
   </div>
 </details>
 
@@ -4228,13 +4231,16 @@ partial interface MLGraphBuilder {
     1. If |options|.{{MLPadOptions/value}} is `undefined`, set it to `0`.
     1. Let |desc| be a copy of |input|.{{MLOperand/[[descriptor]]}}.
     1. Set |desc|.{{MLOperandDescriptor/dimensions}} to the result of invoking the <a>calculate padding output sizes</a> given |input|, |beginningPadding| and |endingPadding|.
-    1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=], `"output"` and |desc|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |operand|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for padding with |input| connected as input, |beginningPadding|, |endingPadding| and |options| connected as parameters and |output| connected as output, and store a reference of the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-    1. Return |operand|.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |desc|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the padding operation, given |beginningPadding|, |endingPadding| and |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
   </div>
 </details>
 
@@ -4410,13 +4416,17 @@ partial interface MLGraphBuilder {
     1. If |options|.{{MLPool2dOptions/autoPad}} is not `"explicit"`, set |options|.{{MLPool2dOptions/padding}} to `[0, 0, 0, 0]`.
     1. If |options|.{{MLPool2dOptions/layout}} is `undefined`, set |options|.{{MLPool2dOptions/layout}} to `"nchw"`.
     1. If |options|.{{MLPool2dOptions/roundingType}} is `undefined`, set |options|.{{MLPool2dOptions/roundingType}} to `"floor"`.
-    1. Let |kind| be `"output"`.
-    1. Make a request to the underlying platform to calculate the output dimensions given |input| and |options|. Let |desc| be the result of that.
-        1. If that throws an error, re-throw the error and stop.
-    1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=], |input| and |desc|.
-        1. If that throws an error, re-throw the error and stop.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] pooling operator for |op| with |input| connected as input, |options| specified as options,  |output| connected as output and to store a reference to the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. Let |desc| be a copy of |input|.{{MLOperand/[[descriptor]]}}.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Make a request to the underlying platform to:
+            1. Calculate the output dimensions given |input| and |options|. Let |desc|.{{MLOperandDescriptor/dimensions}} be the result of that.
+            1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |desc|.
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the |op| pooling operation, given |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -4427,21 +4437,21 @@ partial interface MLGraphBuilder {
   </summary>
   <div algorithm=averagePool2d class=algorithm-steps>
     The {{MLGraphBuilder/averagePool2d(input, options)}} steps are:
-        1. Let |output| be the result of running the [=MLGraphBuilder/pooling-op | create pooling operation =] given "averagePool2d", |input| and |options|.
+        1. Let |output| be the result of running the [=MLGraphBuilder/pooling-op | create pooling operation =] given `"averagePool2d"`, |input| and |options|.
             1. If that throws an error, then re-throw the error and stop.
         1. Return |output|.
   </div>
 
   <div algorithm=l2Pool2d class=algorithm-steps>
     The {{MLGraphBuilder/l2Pool2d(input, options)}} steps are:
-        1. Let |output| be the result of running the [=MLGraphBuilder/pooling-op | create pooling operation =] given "l2Pool2d", |input| and |options|.
+        1. Let |output| be the result of running the [=MLGraphBuilder/pooling-op | create pooling operation =] given `"l2Pool2d"`, |input| and |options|.
             1. If that throws an error, then re-throw the error and stop.
         1. Return |output|.
   </div>
 
   <div algorithm=maxPool2d class=algorithm-steps>
     The {{MLGraphBuilder/maxPool2d(input, options)}} steps are:
-        1. Let |output| be the result of running the [=MLGraphBuilder/pooling-op | create pooling operation =] given "maxPool2d", |input| and |options|.
+        1. Let |output| be the result of running the [=MLGraphBuilder/pooling-op | create pooling operation =] given `"maxPool2d"`, |input| and |options|.
             1. If that throws an error, then re-throw the error and stop.
         1. Return |output|.
   </div>
@@ -4465,20 +4475,24 @@ partial interface MLGraphBuilder {
 </div>
 
 <details open>
-  <summmary>
+  <summary>
     The {{MLGraphBuilder/prelu(input, slope)}} steps are:
   </summary>
   <div algorithm=prelu-input-slope class=algorithm-steps>
     1. If |input| or |slope| is not an instance of {{MLOperand}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
-    1. Let |kind| be `"output"`.
     1. Let |descriptor| be a new {{MLOperandDescriptor}}.
     1. Set |descriptor|.{{MLOperandDescriptor/dimensions}}.{{MLOperandDescriptor/type}} to |input|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/type}}.
     1. Let |descriptor|.{{MLOperandDescriptor/dimensions}} be the result of running the [=MLGraphBuilder/broadcast-shapes=] steps given |input|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/dimensions}} and |slope|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/dimensions}}.
         1. If that throws an error, re-throw the error and stop.
-    1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=], |kind| and |descriptor|.
-        1. If that throws an error, re-throw the error and stop.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for PReLU with |input| connected as input, |slope| connected as slope parameter and |output| connected as output and store a reference of the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |descriptor|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the PreLU operation, given |slope|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -4495,12 +4509,7 @@ partial interface MLGraphBuilder {
 </div>
 
 ### Reduction operations ### {#api-mlgraphbuilder-reduce}
-Reduce the input tensor along the all dimensions, or along the dimensions specified by the axes (indices of dimensions in the tensor shape) in the {{MLReduceOptions/axes}} array parameter. For each specified axis, the dimension with that index is reduced and the resulting tensor will not contain it, unless the {{MLReduceOptions/keepDimensions}} option is specified. The values of the resulting tensor are calculated using the specified function that takes as parameters all the values across the reduced dimension.
-
-<div class="note">
-For example, for a 3D tensor of shape (3, 4, 8) - 3 rows, 4 columns and depth of 8 -, reducing along axes `[2]` with the mean function will replace the depth dimension, so the resulting tensor shape is (3, 4) - 3 rows, 4 columns -, where each value is calculated as the mean of the 8 values along the depth dimension. Reducing the same input along axes `[0, 2]` with the sum function will result in a new tensor with shape (0, 4) - a vector with 4 elements - where first the rows are reduced (with the sum of 3 values) to a matrix of shape (, 4, 8), then the depth dimension (with the sum of 8 values) to a vector of shape (4,).
-</div>
-
+Reduce the input tensor along all dimensions, or along the axes specified in the {{MLReduceOptions/axes}}  array parameter. For each specified axis, the dimension with that index is reduced, i.e. the resulting tensor will not contain it, unless the {{MLReduceOptions/keepDimensions}} option is specified. The values of the resulting tensor are calculated using the specified reduction function that takes as parameters all the values across the reduced dimension.
 <script type=idl>
 dictionary MLReduceOptions {
   sequence<unsigned long> axes = null;
@@ -4555,11 +4564,15 @@ partial interface MLGraphBuilder {
     1. [=Assert=]: |op| is one of "reduceL1", "reduceL2", "reduceLogSum", "reduceLogSumExp", "reduceMax", "reduceMean", "reduceMin", "reduceProduct", "reduceSum", "reduceSumSquare".
     1. If |input| is not an instance of {{MLOperand}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
     1. If |options| is `undefined`, let |options| be a new {{MLReduceOptions}} object with |options|.{{MLReduceOptions/keepDimensions}} set to `false` and |options|.{{MLReduceOptions/axes}} set to `null`.
-    1. Let |kind| be `"output"`.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and stop.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] reduce operator for |op| with |input| connected as input, |options| specified as options,  |output| connected as output and to store a reference to the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the |op| reduce operation, given |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -4654,13 +4667,15 @@ partial interface MLGraphBuilder {
   </summary>
   <div algorithm=relu-input class=algorithm-steps>
     1. If |input| is not an instance of {{MLOperand}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and stop.
-    1. Make a request to the underlying platform to:
-        1. Create an [=implementation-defined=] platform operand object for |output| and store a reference in |output|.{{MLOperand/[[operand]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-        1. Create an [=implementation-defined=] platform operator for the ReLU function whose input is connected to |input| and its output is connected to |output| and store a reference in |output|.{{MLOperand/[[operator]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the ReLU operation.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -4681,11 +4696,6 @@ partial interface MLGraphBuilder {
   <div algorithm=relu class=algorithm-steps>
     1. Let |op| be the result of invoking the <a>create MLActivation</a> steps with `"relu"`.
         1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |op| with the [=implementation-defined=] platform operator for the ReLU function, and store a reference of the resulting [=implementation-defined=] platform operator object in |op|.{{MLActivation/[[operator]]}}.
-        <div class="note">
-            This step does not execute the operation yet, it just prepares the operator.
-        </div>
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
     1. Return |op|.
   </div>
 </details>
@@ -4789,13 +4799,15 @@ partial interface MLGraphBuilder {
         1. If that returns `null`, then throw a "{{DataError}}" {{DOMException}} and stop.
     1. Let |desc| be the result of running the <a>resample output sizes</a> steps given |options|.
         1. If that throws an error, re-throw the error and stop.
-    1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=], `"output"` and |desc|.
-        1. If that throws an error, re-throw the error and stop.
-    1. Make a request to the underlying platform to:
-        1. Create an [=implementation-defined=] platform operand object for |output| and store a reference in |output|.{{MLOperand/[[operand]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-        1. Create an [=implementation-defined=] platform operator for the resample function whose input is connected to |input| and its output is connected to |output| and store a reference in |output|.{{MLOperand/[[operator]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |desc|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the resample 2D operation, given |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -4810,12 +4822,12 @@ partial interface MLGraphBuilder {
 <div>
     **Arguments:**
         - *input*: an {{MLOperand}}. The input tensor.
-        - *newShape*: a sequence of {{nullable}} {{unsigned long}}. Specifies the shape of the output tensor.
+        - *newShape*: a sequence of {{nullable}} {{unsigned long}}. The shape of the output tensor.
             The number of elements implied by *newShape* must be the same as the
             number of elements in the input tensor. Only one component of
             *newShape* can be the special value of `null`. The size of the dimension
             with the value `null` is computed so that the total size remains
-            the same.
+            constant.
 
     **Returns:** an {{MLOperand}}. The output tensor. The values of the output
     tensor are the same as values of the input tensor. The shape of the output
@@ -4838,20 +4850,23 @@ partial interface MLGraphBuilder {
         1. If |newShape| contains a `null` value, set that value to |inputElementCount| divided by the product of all other values in |newShape|.
             1. If that value is too large for {{unsigned long}}, then throw a "{{DataError}}" {{DOMException}} and stop.
         1. If product of all values in |newShape| is not equal to |inputElementCount|, then throw a "{{DataError}}" {{DOMException}} and stop.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws, re-throw the exception and stop.
-    1. Set |output|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/dimensions}} to |newShape|.
-    1. Make a request to the underlying platform to register |output| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |operand|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for reshape with |input| connected as input, |output| connected as output and store a reference of the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-    1. Return |operand|.
+    1. Let |desc| be a copy of |input|.{{MLOperand/[[descriptor]]}}.
+    1. Set |desc|.{{MLOperandDescriptor/dimensions}} to |newShape|.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>create MLOperand</a> steps given [=this=] and |desc|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the reshape operation.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
   </div>
 </details>
 
 ### The sigmoid() method ### {#api-mlgraphbuilder-sigmoid-method}
 Compute the <a href="https://en.wikipedia.org/wiki/Sigmoid_function">sigmoid function</a> of the input tensor. The calculation follows the expression `1 / (exp(-x) + 1)`.
-
 <script type=idl>
 partial interface MLGraphBuilder {
   MLOperand sigmoid(MLOperand input);
@@ -4888,13 +4903,15 @@ partial interface MLGraphBuilder {
   </summary>
   <div algorithm=sigmoid-input class=algorithm-steps>
     1. If |input| is not an instance of {{MLOperand}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and stop.
-    1. Make a request to the underlying platform to:
-        1. Create an [=implementation-defined=] platform operand object for |output| and store a reference in |output|.{{MLOperand/[[operand]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-        1. Create an [=implementation-defined=] platform operator for the sigmoid function whose input is connected to |input| and its output is connected to |output| and store a reference in |output|.{{MLOperand/[[operator]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the sigmoid operation.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -4915,11 +4932,6 @@ partial interface MLGraphBuilder {
   <div algorithm=sigmoid class=algorithm-steps>
     1. Let |op| be the result of invoking the <a>create MLActivation</a> steps with `"sigmoid"`.
         1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |op| with the [=implementation-defined=] platform operator for the sigmoid function, and store a reference of the resulting [=implementation-defined=] platform operator object in |op|.{{MLActivation/[[operator]]}}.
-        <div class="note">
-            This step does not execute the operation yet, it just prepares the operator.
-        </div>
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
     1. Return |op|.
   </div>
 </details>
@@ -4927,57 +4939,46 @@ partial interface MLGraphBuilder {
 ### The slice() method ### {#api-mlgraphbuilder-slice}
 Produce a slice of the input tensor.
 <script type=idl>
-dictionary MLSliceOptions {
-  sequence<unsigned long> axes;
-};
-
 partial interface MLGraphBuilder {
-  MLOperand slice(MLOperand input, sequence<long> starts, sequence<long> sizes,
-                optional MLSliceOptions options = {});
+  MLOperand slice(MLOperand input, sequence<unsigned long> starts, sequence<unsigned long> sizes);
 };
 </script>
 <div>
     **Arguments:**
         - *input*: an {{MLOperand}}. The input tensor.
-        - *starts*: a sequence of {{long}}. The starting indices to slice of the corresponding axes of the input shape. A negative index value is interpreted as counting back from the end. For example, the value -1
-        - *sizes*: a sequence of {{long}}. The lengths to slice of the corresponding axes of the input shape.
-            The length value of -1 selects all the remaining elements from the starting index of the given axis.
-        - *options*: an optional {{MLSliceOptions}}. The optional parameters of the operation.
+        - *starts*: a sequence of {{unsigned long}}. The sequence of unsigned integer values indicating the starting index to slice of each input dimension, of length N where N is the rank of the input tensor. For each dimension *d* of *input*, *starts[d]* indicates the starting index to slice in that dimension. The starting index must be in the range [0, input size - 1] in that dimension.
+        - *sizes*: a sequence of {{unsigned long}}. The sequence of unsigned integer values indicating the number of elements to slice of each input dimension, of length N where N is the rank of the input tensor. For each dimension *d* of *input*, *sizes[d]* indicates the number of elements to slice in that dimension. The size must not be 0 and must satisfy the constraint *starting index + size <= input size* in that dimension.
 
     **Returns:** an {{MLOperand}}. The output tensor of the same rank as the input tensor with tensor values stripped to the specified starting and ending indices in each dimension.
 </div>
 
-{{MLSliceOptions}} has the following members:
-<dl dfn-type=dict-member dfn-for=MLSliceOptions>
-    : <dfn>axes</dfn>
-    ::
-        A sequence of {{unsigned long}}. The dimensions of the input shape to which the *starts* and *sizes* parameters of {{MLGraphBuilder/slice()}} apply. The values in the sequence must be in the range [0, N-1] where N is the rank of input tensor.
-        The default value is [0, ..., N-1] representing all dimensions, e.g. [0,1,2] for a 3-D tensor.
-</dl>
-
 <details open>
   <summary>
-    The {{MLGraphBuilder/slice(input, starts, sizes, options)}} steps are:
+    The {{MLGraphBuilder/slice(input, starts, sizes)}} steps are:
   </summary>
   <div algorithm=slice class=algorithm-steps>
     1. If |input| is not an instance of {{MLOperand}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
     1. If |starts| or |sizes| is not a sequence of {{long}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
-    1. If |options| is `undefined`, let |options| be an empty [=object=].
-    1. If |options|.{{MLSliceOptions/axes}} is `undefined`, let |options|.{{MLSliceOptions/axes}} be the sequence of all indices for |input|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/dimensions}}.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |operand|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for slice with |input| connected as input, |starts|, |sizes| and |options|.{{MLSliceOptions/axes}} connected as parameters, |output| connected as output and store a reference of the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-    1. Return |operand|.
+    1. If |sizes|.size is 0, then throw a "{{TypeError}}" {{DOMException}} and stop.
+        <div class="note">
+            Further validation of |starts| and |sizes| given |input| is left [=implementation-defined=].
+        </div>
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the slice operation, given |starts| and |sizes|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
   </div>
 </details>
 
 ### The softmax() method ### {#api-mlgraphbuilder-softmax-method}
 Compute the [softmax](https://en.wikipedia.org/wiki/Softmax_function) values of
 the 2-D input tensor along axis 1.
-
 <script type=idl>
 partial interface MLGraphBuilder {
   MLOperand softmax(MLOperand input);
@@ -5021,13 +5022,15 @@ partial interface MLGraphBuilder {
   </summary>
   <div algorithm=softmax-input class=algorithm-steps>
     1. If |input| is not an instance of {{MLOperand}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and stop.
-    1. Make a request to the underlying platform to:
-        1. Create an [=implementation-defined=] platform operand object for |output| and store a reference in |output|.{{MLOperand/[[operand]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-        1. Create an [=implementation-defined=] platform operator for the softmax function whose input is connected to |input| and its output is connected to |output| and store a reference in |output|.{{MLOperand/[[operator]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the softmax operation.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -5040,7 +5043,6 @@ partial interface MLGraphBuilder {
     **Returns:**
         - an {{MLActivation}}. The activation function representing the softmax operation.
 </div>
-
 <details open>
   <summary>
     The {{MLGraphBuilder/softmax()}} method steps are:
@@ -5048,18 +5050,12 @@ partial interface MLGraphBuilder {
   <div algorithm=softmax class=algorithm-steps>
     1. Let |op| be the result of invoking the <a>create MLActivation</a> steps with `"softmax"`.
         1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |op| with the [=implementation-defined=] platform operator for the softmax function, and store a reference of the resulting [=implementation-defined=] platform operator object in |op|.{{MLActivation/[[operator]]}}.
-        <div class="note">
-            This step does not execute the operation yet, it just prepares the operator.
-        </div>
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
     1. Return |op|.
   </div>
 </details>
 
 ### The softplus() method ### {#api-mlgraphbuilder-softplus-method}
 Compute the <a href="https://en.wikipedia.org/wiki/Rectifier_(neural_networks)#Softplus">softplus function</a> of the input tensor. The calculation follows the expression `ln(1 + exp(steepness * x)) / steepness`.
-
 <script type=idl>
 dictionary MLSoftplusOptions {
   float steepness = 1;
@@ -5124,11 +5120,16 @@ partial interface MLGraphBuilder {
     1. Let |input| be the first argument.
     1. Let |options| be the second argument.
         1. If running the <a>check softplus options</a> steps with |options| returns `false`, then throw a "{{TypeError}}" {{DOMException}} and abort these steps.
-    1. Let |result| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |result| with the [=implementation-defined=] platform operator for the softplus function, and store a reference to the resulting [=implementation-defined=] platform operand object in |result|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
-    1. Return |result|.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the softplus operation, given |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
   </div>
 </details>
 
@@ -5150,18 +5151,12 @@ partial interface MLGraphBuilder {
         1. If running the <a>check softplus options</a> steps with |options| returns `false`, then throw a "{{TypeError}}" {{DOMException}} and abort these steps.
     1. Let |op| be the result of invoking the <a>create MLActivation</a> steps with `"softplus"` and |options|.
         1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |op| with the [=implementation-defined=] platform operator for the softplus function, and store a reference of the resulting [=implementation-defined=] platform operator object in |op|.{{MLActivation/[[operator]]}}.
-        <div class="note">
-            This step does not execute the operation yet, it just prepares the operator.
-        </div>
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
     1. Return |op|.
   </div>
 </details>
 
 ### The softsign() method ### {#api-mlgraphbuilder-softsign-method}
 Compute the <a href="https://pytorch.org/docs/stable/generated/torch.nn.Softsign.html">softsign function</a> of the input tensor. The calculation follows the expression `x / (1 + |x|)`.
-
 <script type=idl>
 partial interface MLGraphBuilder {
   MLOperand softsign(MLOperand input);
@@ -5194,13 +5189,15 @@ partial interface MLGraphBuilder {
   </summary>
   <div algorithm=softsign-input class=algorithm-steps>
     1. If |input| is not an instance of {{MLOperand}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and stop.
-    1. Make a request to the underlying platform to:
-        1. Create an [=implementation-defined=] platform operand object for |output| and store a reference in |output|.{{MLOperand/[[operand]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-        1. Create an [=implementation-defined=] platform operator for the softsign function whose input is connected to |input| and its output is connected to |output| and store a reference in |output|.{{MLOperand/[[operator]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the softsign operation, given |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -5213,7 +5210,6 @@ partial interface MLGraphBuilder {
     **Returns:**
         - an {{MLActivation}}. The activation function representing the softsign operation.
 </div>
-
 <details open>
   <summary>
     The {{MLGraphBuilder/softsign()}} method steps are:
@@ -5221,11 +5217,6 @@ partial interface MLGraphBuilder {
   <div algorithm=softsign class=algorithm-steps>
     1. Let |op| be the result of invoking the <a>create MLActivation</a> steps with `"softsign"`.
         1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |op| with the [=implementation-defined=] platform operator for the softsign function, and store a reference of the resulting [=implementation-defined=] platform operator object in |op|.{{MLActivation/[[operator]]}}.
-        <div class="note">
-            This step does not execute the operation yet, it just prepares the operator.
-        </div>
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
     1. Return |op|.
   </div>
 </details>
@@ -5270,13 +5261,16 @@ partial interface MLGraphBuilder {
     1. If |options| is `undefined`, let |options| be an empty [=object=].
     1. If |options|.{{MLSplitOptions/axis}} is `undefined`, let |options|.{{MLSplitOptions/axis}} be `0`.
     1. If |splits| is not {{unsigned long}} or a sequence of {{unsigned long}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |operand|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for split with |input| connected as input, |splits| and |options|.{{MLSplitOptions/axis}} connected as parameters, |output| connected as output and store a reference of the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-    1. Return |operand|.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the split operation, given |splits| and |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
   </div>
 </details>
 
@@ -5341,24 +5335,26 @@ partial interface MLGraphBuilder {
   <div algorithm=squeeze class=algorithm-steps>
     1. If |input| is not an instance of {{MLOperand}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
     1. If |options| is `undefined`, let |options| be an empty [=object=].
-    1. If |options|.{{MLSliceOptions/axes}} [=map/exists=], then:
+    1. If |options|.{{MLSqueezeOptions/axes}} [=map/exists=], then:
         1. Let |dimensions| be |input|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/dimensions}}.
-        1. For |index| between 0 and the size of |options|.{{MLSliceOptions/axes}}:
-            1. Let |oneDimIndex| be |options|.{{MLSliceOptions/axes}}[|index|].
+        1. For |index| between 0 and the size of |options|.{{MLSqueezeOptions/axes}}:
+            1. Let |oneDimIndex| be |options|.{{MLSqueezeOptions/axes}}[|index|].
             1. If |dimensions|[|oneDimIndex|] is not `1`, then throw a "{{TypeError}}" {{DOMException}} and stop.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |operand|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for squeeze with |input| connected as input, |options|.{{MLSqueezeOptions/axes}} connected as parameters, |output| connected as output and store a reference of the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-    1. Return |operand|.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the squeeze operation, given |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
   </div>
 </details>
 
 ### The tanh() method ### {#api-mlgraphbuilder-tanh-method}
 Compute the <a href="https://en.wikipedia.org/wiki/Hyperbolic_functions">hyperbolic tangent function</a> of the input tensor. The calculation follows the expression `(exp(2 * x) - 1) / (exp(2 * x) + 1)`.
-
 <script type=idl>
 partial interface MLGraphBuilder {
   MLOperand tanh(MLOperand input);
@@ -5393,13 +5389,15 @@ partial interface MLGraphBuilder {
   </summary>
   <div algorithm=tanh-input class=algorithm-steps>
     1. If |input| is not an instance of {{MLOperand}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws an error, re-throw the error and stop.
-    1. Make a request to the underlying platform to:
-        1. Create an [=implementation-defined=] platform operand object for |output| and store a reference in |output|.{{MLOperand/[[operand]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-        1. Create an [=implementation-defined=] platform operator for the tanh function whose input is connected to |input| and its output is connected to |output| and store a reference in |output|.{{MLOperand/[[operator]]}}.
-            1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the hyperbolic tangent operation.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
     1. Return |output|.
   </div>
 </details>
@@ -5420,11 +5418,6 @@ partial interface MLGraphBuilder {
   <div algorithm=tanh class=algorithm-steps>
     1. Let |op| be the result of invoking the <a>create MLActivation</a> steps with `"tanh"`.
         1. If that throws an error, re-throw the error and abort these steps.
-    1. Make a request to the underlying platform to connect |op| with the [=implementation-defined=] platform operator for the tanh function, and store a reference of the resulting [=implementation-defined=] platform operator object in |op|.{{MLActivation/[[operator]]}}.
-        <div class="note">
-            This step does not execute the operation yet, it just prepares the operator.
-        </div>
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and stop.
     1. Return |op|.
   </div>
 </details>
@@ -5472,13 +5465,16 @@ partial interface MLGraphBuilder {
         1. If the rank of |options|.{{MLTransposeOptions/permutation}} is not the same as the rank of |input|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/dimensions}}, then throw a "{{TypeError}}" {{DOMException}} and stop.
         1. If the values in |options|.{{MLTransposeOptions/permutation}} are not between `0` and the rank of |input|.{{MLOperand/[[descriptor]]}}.{{MLOperandDescriptor/dimensions}} minus `1`, then throw a "{{TypeError}}" {{DOMException}} and stop.
         1. If the values in |options|.{{MLTransposeOptions/permutation}} contain duplicate value, then throw a "{{TypeError}}" {{DOMException}} and stop.
-    1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
-        1. If that throws, re-throw the exception and stop.
-    1. Make a request to the underlying platform to register |output| as operand and store a reference to the corresponding [=implementation-defined=] platform object in |operand|.{{MLOperand/[[operand]]}}.
-        1. If that fails, throw an "{{OperationError}}" {{DOMException}} and abort these steps.
-    1. Make a request to the underlying platform to create an [=implementation-defined=] platform operator for transpose with |input| connected as input, |options|.{{MLTransposeOptions/permutation}} connected as parameter, |output| connected as output and store a reference of the operator in |output|.{{MLOperand/[[operator]]}}.
-        1. If that fails, throw a "{{DataError}}" {{DOMException}} and stop.
-    1. Return |operand|.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Let |output| be the result of invoking the <a>copy MLOperand</a> steps given |input|.
+        1. Make a request to the underlying platform to:
+            1. Let |opImpl| be an [=implementation-defined=] platform operator for the transpose operation, given |options|.
+            1. Store a reference of |opImpl| in |output|.{{MLOperand/[[operator]]}}.
+            1. Create an [=implementation-defined=] platform operand |outputImpl| to represent the output, given |output| and |opImpl|.
+            1. Store a reference to |outputImpl| in |output|.{{MLOperand/[[operand]]}}.
+        1. Connect |input|.{{MLOperand/[[operand]]}} as input to |opImpl|.
+        1. Connect |output|.{{MLOperand/[[operand]]}} as output to |opImpl|.
+    1. Return |output|.
   </div>
 </details>
 

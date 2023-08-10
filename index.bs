@@ -1049,7 +1049,7 @@ These activations function types are used to create other operations. One such u
 
 #### Creating {{MLActivation}} #### {#api-mlactivation-create}
 <div class="note">
-The {{MLActivation}} objects (including the ones passed as input to methods) are created by the methods of {{MLGraphBuilder}} and are identified by their name. The |options| dictionary is defined by those methods. The actual creation of the activation function e.g. a [[#api-mlgraphbuilder-sigmoid]] or [[#api-mlgraphbuilder-relu]] can then be deferred until when the rest of the graph is ready to connect with it such as during the construction of [[#api-mlgraphbuilder-conv2d]] for example.
+The {{MLActivation}} objects (including the ones passed as input to methods) are created by the methods of {{MLGraphBuilder}} and are identified by their name. The |options| dictionary is defined by those methods. The actual creation of the activation function e.g. a [[#api-mlgraphbuilder-sigmoid-method]] or [[#api-mlgraphbuilder-relu-method]] can then be deferred until when the rest of the graph is ready to connect with it such as during the construction of [[#api-mlgraphbuilder-conv2d]] for example.
 </div>
 
 <details open>
@@ -1331,10 +1331,6 @@ partial interface MLContext {
             1. Set |result|.{{MLComputeResult/inputs}} to |transferredInputs|.
             1. Set |result|.{{MLComputeResult/outputs}} to |transferredOutputs|.
             1. [=Resolve=] |promise| with |result| and stop.
-
-    <div class="note">
-        During asynchronous execution, the compute requests in the <a>execute graph</a> algorithm MAY be executed [=in parallel=], or otherwise optimized for the underlying platform.
-    </div>
   </div>
 </details>
 
@@ -1504,8 +1500,12 @@ partial interface MLCommandEncoder {
     The {{MLCommandEncoder/finish(descriptor)}} method steps are:
   </summary>
   <div algorithm=mlcommandencoder.finish class=algorithm-steps>
-    1. Make a request to the underlying platform to complete the recording of the ML workload.
-    1. Return a WebGPU-compatible {{GPUCommandBuffer}} containing the recorded workload.
+    1. If any of the following sub-steps fail, throw an "{{OperationError}}" {{DOMException}} and stop.
+        1. Make a request to the underlying platform to complete the recording of the ML workload, given |descriptor|.
+            <div class="note">
+                See the related <a href="https://www.w3.org/TR/webgpu/#dom-gpucommandencoder-finish">WebGPU steps</a>.
+            </div>
+    1. Return a {{GPUCommandBuffer}} containing the recorded workload.
   </div>
 </details>
 
@@ -1827,7 +1827,10 @@ partial interface MLGraphBuilder {
 </details>
 
 <div class="note">
+  <details open>
+    <summary>
     The behavior of this operation when the input tensor is 4-D of the *"nchw"* layout and the activation is of operator type *relu* can be generically emulated from the usage of other operations as follow. However, user agents typically have a more efficient implementation for it, therefore its usage is encouraged from the performance standpoint.
+    </summary>
     <pre highlight="js">
     const shape = [1,null,1,1];
     return builder.relu(
@@ -1842,7 +1845,7 @@ partial interface MLGraphBuilder {
             )),
         builder.reshape(options.bias, shape)));
     </pre>
-    </div>
+  </details>
 </div>
 
 ### The clamp() method ### {#api-mlgraphbuilder-clamp}
@@ -2146,6 +2149,8 @@ partial interface MLGraphBuilder {
     1. If |options| is `undefined`, let |options| be an empty [=object=].
     1. If |options|.{{MLConv2dOptions/padding}} is `undefined`, set it to `[0, 0, 0, 0]`.
     1. If |options|.{{MLConv2dOptions/strides}} is `undefined`, set it to `[1, 1]`.
+    1. Else if |options|.{{MLConv2dOptions/strides}}.size() is not `2`, then throw a "{{TypeError}}" {{DOMException}} and stop.
+    1. If any element in |options|.{{MLConv2dOptions/strides}} is equal to 0, then throw a "{{TypeError}}" {{DOMException}} and stop.
     1. If |options|.{{MLConv2dOptions/dilations}} is `undefined`, set it to `[1, 1]`.
     1. If |options|.{{MLConv2dOptions/autoPad}} is `undefined`, set it to `"explicit"`.
     1. If |options|.{{MLConv2dOptions/groups}} is `undefined`, set it to `1`.
@@ -2312,6 +2317,8 @@ partial interface MLGraphBuilder {
     1. If |options| is `undefined`, let |options| be an empty [=object=].
     1. If |options|.{{MLConvTranspose2dOptions/padding}} is `undefined`, set it to `[0, 0, 0, 0]`.
     1. If |options|.{{MLConvTranspose2dOptions/strides}} is `undefined`, set it to `[1, 1]`.
+    1. Else if |options|.{{MLConv2dOptions/strides}}.size() is not `2`, then throw a "{{TypeError}}" {{DOMException}} and stop.
+    1. If any element in |options|.{{MLConv2dOptions/strides}} is equal to 0, then throw a "{{TypeError}}" {{DOMException}} and stop.
     1. If |options|.{{MLConvTranspose2dOptions/dilations}} is `undefined`, set it to `[1, 1]`.
     1. If |options|.{{MLConvTranspose2dOptions/outputPadding}} is `undefined`, set it to `[0, 0]`.
     1. If |options|.{{MLConvTranspose2dOptions/autoPad}} is `undefined`, set it to `"explicit"`.
@@ -2586,10 +2593,13 @@ partial interface MLGraphBuilder {
 </script>
 
 <div class="note">
+  <details open>
+    <summary>
     The behavior of this operation can be generically emulated from the usage of
     other operations as follow. However, user agents typically have a more
     efficient implementation for it, therefore its usage is encouraged from the
     performance standpoint.
+    </summary>
     <pre highlight="js">
     return builder.add(
               builder.max(builder.constant(0), x),
@@ -2599,6 +2609,7 @@ partial interface MLGraphBuilder {
                   builder.exp(builder.min(builder.constant(0), x)),
                   builder.constant(1))));
     </pre>
+  </details>
 </div>
 
 <details open>
@@ -3161,10 +3172,13 @@ partial interface MLGraphBuilder {
 </script>
 
 <div class="note">
+  <details open>
+    <summary>
     The behavior of this operation can be generically emulated from the usage of
     other operations as follow. However, user agents typically have a more
     efficient implementation for it, therefore its usage is encouraged from the
     performance standpoint.
+    </summary>
     <pre highlight="js">
     return builder.max(
                builder.min(
@@ -3174,6 +3188,7 @@ partial interface MLGraphBuilder {
                    builder.constant(1)),
                builder.constant(0));
     </pre>
+  </details>
 </div>
 
 {{MLHardSigmoidOptions}} has the following members:
@@ -3322,7 +3337,7 @@ partial interface MLGraphBuilder {
   <summary>
     The {{MLGraphBuilder/hardSwish()}} method steps are:
   </summary>
-  <div algorithm=hard-swish class=algorithm-steps>
+  <div algorithm=hardswish class=algorithm-steps>
     1. Let |op| be the result of invoking the <a>create MLActivation</a> steps with `"hardSwish"`.
         1. If that throws an error, re-throw the error and abort these steps.
     1. Return |op|.
@@ -3455,14 +3470,18 @@ partial interface MLGraphBuilder {
 </script>
 
 <div class="note">
+  <details open>
+    <summary>
     The behavior of this operation can be generically emulated from the usage of
     other operations as follow. However, user agents typically have a more
     efficient implementation for it, therefore its usage is encouraged from the
     performance standpoint.
+    </summary>
     <pre highlight="js">
     return builder.add(builder.max(builder.constant(0), x),
               builder.mul(builder.constant(options.alpha), builder.min(builder.constant(0), x)));
     </pre>
+  </details>
 </div>
 
 {{MLLeakyReluOptions}} has the following members:
@@ -3556,15 +3575,19 @@ partial interface MLGraphBuilder {
 </script>
 
 <div class="note">
+  <details open>
+    <summary>
     The behavior of this operation can be generically emulated from the usage of
     other operations as follow. However, user agents typically have a more
     efficient implementation for it, therefore its usage is encouraged from the
     performance standpoint.
+    </summary>
     <pre highlight="js">
     return builder.add(
               builder.mul(x, builder.constant(options.alpha)),
               builder.constant(options.beta));
     </pre>
+  </details>
 </div>
 
 {{MLLinearOptions}} has the following members:
@@ -4498,14 +4521,18 @@ partial interface MLGraphBuilder {
 </details>
 
 <div class="note">
+  <details open>
+    <summary>
     The behavior of this operation can be generically emulated from the usage of
     other operations as follow. However, user agents typically have a more
     efficient implementation for it, therefore its usage is encouraged from the
     performance standpoint.
+    </summary>
     <pre highlight="js">
     return builder.add(builder.max(builder.constant(0), x),
                        builder.mul(slope, builder.min(builder.constant(0), x)));
     </pre>
+  </details>
 </div>
 
 ### Reduction operations ### {#api-mlgraphbuilder-reduce}
@@ -4643,13 +4670,17 @@ partial interface MLGraphBuilder {
 </script>
 
 <div class="note">
+  <details open>
+    <summary>
     The behavior of this operation can be generically emulated from the usage of
     other operations as follow. However, user agents typically have a more
     efficient implementation for it, therefore its usage is encouraged from the
     performance standpoint.
+    </summary>
     <pre highlight="js">
     return builder.max(builder.constant(0), x);
     </pre>
+  </details>
 </div>
 
 #### The {{MLGraphBuilder/relu(input)}} method #### {#api-mlgraphbuilder-relu-input}
@@ -4875,10 +4906,13 @@ partial interface MLGraphBuilder {
 </script>
 
 <div class="note">
+  <details open>
+    <summary>
     The behavior of this operation can be generically emulated from the usage of
     other operations as follow. However, user agents typically have a more
     efficient implementation for it, therefore its usage is encouraged from the
     performance standpoint.
+    </summary>
     <pre highlight="js">
     return builder.div(
               builder.constant(1),
@@ -4886,6 +4920,7 @@ partial interface MLGraphBuilder {
                 builder.exp(builder.neg(x)),
                 builder.constant(1)));
     </pre>
+  </details>
 </div>
 
 #### The {{MLGraphBuilder/sigmoid(input)}} method #### {#api-mlgraphbuilder-sigmoid-input}
@@ -5068,10 +5103,13 @@ partial interface MLGraphBuilder {
 </script>
 
 <div class="note">
+  <details open>
+    <summary>
     The behavior of this operation can be generically emulated from the usage of
     other operations as follow. However, user agents typically have a more
     efficient implementation for it, therefore its usage is encouraged from the
     performance standpoint.
+    </summary>
     <pre highlight="js">
     return builder.div(
               builder.log(
@@ -5080,6 +5118,7 @@ partial interface MLGraphBuilder {
                   builder.constant(1))),
               builder.constant(options.steepness));
     </pre>
+  </details>
 </div>
 
 {{MLSoftplusOptions}} has the following members:
@@ -5165,13 +5204,17 @@ partial interface MLGraphBuilder {
 </script>
 
 <div class="note">
+  <details open>
+    <summary>
     The behavior of this operation can be generically emulated from the usage of
     other operations as follow. However, user agents typically have a more
     efficient implementation for it, therefore its usage is encouraged from the
     performance standpoint.
+    </summary>
     <pre highlight="js">
     return builder.div(x, builder.add(builder.constant(1), builder.abs(x)));
     </pre>
+  </details>
 </div>
 
 #### The {{MLGraphBuilder/softsign(input)}} method #### {#api-mlgraphbuilder-softsign-input}
@@ -5363,15 +5406,19 @@ partial interface MLGraphBuilder {
 </script>
 
 <div class="note">
+  <details open>
+    <summary>
     The behavior of this operation can be generically emulated from the usage of
     other operations as follow. However, user agents typically have a more
     efficient implementation for it, therefore its usage is encouraged from the
     performance standpoint.
+    </summary>
     <pre highlight="js">
     return builder.div(
               builder.sub(builder.exp(builder.mul(builder.constant(2), x)), builder.constant(1)),
               builder.add(builder.exp(builder.mul(builder.constant(2), x)), builder.constant(1)));
     </pre>
+  </details>
 </div>
 
 #### The {{MLGraphBuilder/tanh(input)}} method #### {#api-mlgraphbuilder-tanh-input}

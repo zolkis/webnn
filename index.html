@@ -8,7 +8,7 @@
   <link href="https://www.w3.org/2008/site/images/favicon.ico" rel="icon">
   <meta content="Bikeshed version d9f9c3533, updated Fri Mar 10 11:31:29 2023 -0800" name="generator">
   <link href="https://www.w3.org/TR/webnn/" rel="canonical">
-  <meta content="20c7e9fa597f15f1f88bf2a8197c84fdfefc9aca" name="document-revision">
+  <meta content="cc0f3ba8c161933190951ac11552cd89498869c7" name="document-revision">
 <style>
 /* Make <dl> blocks more distinct from their surroundings. */
 main dl:not(.switch) {
@@ -7035,7 +7035,9 @@ the 2-D input tensor along axis 1.
       <li data-md>
        <p>If <var>input</var> is not an instance of <code class="idl"><a data-link-type="idl" href="#mloperand" id="ref-for-mloperand③④④">MLOperand</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪⓪">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②②⑤">DOMException</a></code> and stop.</p>
       <li data-md>
-       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④②">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②②⑥">DOMException</a></code> and stop.</p>
+       <p>If the length of <var>input</var>.<code class="idl"><a data-link-type="idl" href="#dom-mloperand-descriptor-slot" id="ref-for-dom-mloperand-descriptor-slot⑦③">[[descriptor]]</a></code>.<code class="idl"><a data-link-type="idl" href="#dom-mloperanddescriptor-dimensions" id="ref-for-dom-mloperanddescriptor-dimensions⑦⑧">dimensions</a></code> is not 2, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#dataerror" id="ref-for-dataerror⑧②">DataError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②②⑥">DOMException</a></code> and stop.</p>
+      <li data-md>
+       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④②">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②②⑦">DOMException</a></code> and stop.</p>
        <ol>
         <li data-md>
          <p>Let <var>output</var> be the result of invoking the <a data-link-type="dfn" href="#copy-mloperand" id="ref-for-copy-mloperand①②">copy MLOperand</a> steps given <var>input</var>.</p>
@@ -7162,10 +7164,10 @@ the 2-D input tensor along axis 1.
        <p>Let <var>options</var> be the second argument.</p>
        <ol>
         <li data-md>
-         <p>If running the <a data-link-type="dfn" href="#check-softplus-options" id="ref-for-check-softplus-options">check softplus options</a> steps with <var>options</var> returns <code>false</code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪①">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②②⑦">DOMException</a></code> and abort these steps.</p>
+         <p>If running the <a data-link-type="dfn" href="#check-softplus-options" id="ref-for-check-softplus-options">check softplus options</a> steps with <var>options</var> returns <code>false</code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪①">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②②⑧">DOMException</a></code> and abort these steps.</p>
        </ol>
       <li data-md>
-       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④③">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②②⑧">DOMException</a></code> and stop.</p>
+       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④③">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②②⑨">DOMException</a></code> and stop.</p>
        <ol>
         <li data-md>
          <p>Let <var>output</var> be the result of invoking the <a data-link-type="dfn" href="#copy-mloperand" id="ref-for-copy-mloperand①③">copy MLOperand</a> steps given <var>input</var>.</p>
@@ -7212,7 +7214,7 @@ the 2-D input tensor along axis 1.
        <p>Let <var>options</var> be the first argument.</p>
        <ol>
         <li data-md>
-         <p>If running the <a data-link-type="dfn" href="#check-softplus-options" id="ref-for-check-softplus-options①">check softplus options</a> steps with <var>options</var> returns <code>false</code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪②">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②②⑨">DOMException</a></code> and abort these steps.</p>
+         <p>If running the <a data-link-type="dfn" href="#check-softplus-options" id="ref-for-check-softplus-options①">check softplus options</a> steps with <var>options</var> returns <code>false</code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪②">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⓪">DOMException</a></code> and abort these steps.</p>
        </ol>
       <li data-md>
        <p>Let <var>op</var> be the result of invoking the <a data-link-type="dfn" href="#create-mlactivation" id="ref-for-create-mlactivation⑨">create MLActivation</a> steps with <code>"softplus"</code> and <var>options</var>.</p>
@@ -7260,9 +7262,9 @@ the 2-D input tensor along axis 1.
     <div class="algorithm-steps algorithm" data-algorithm="softsign-input">
      <ol>
       <li data-md>
-       <p>If <var>input</var> is not an instance of <code class="idl"><a data-link-type="idl" href="#mloperand" id="ref-for-mloperand③⑤③">MLOperand</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪③">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⓪">DOMException</a></code> and stop.</p>
+       <p>If <var>input</var> is not an instance of <code class="idl"><a data-link-type="idl" href="#mloperand" id="ref-for-mloperand③⑤③">MLOperand</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪③">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③①">DOMException</a></code> and stop.</p>
       <li data-md>
-       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④④">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③①">DOMException</a></code> and stop.</p>
+       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④④">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③②">DOMException</a></code> and stop.</p>
        <ol>
         <li data-md>
          <p>Let <var>output</var> be the result of invoking the <a data-link-type="dfn" href="#copy-mloperand" id="ref-for-copy-mloperand①④">copy MLOperand</a> steps given <var>input</var>.</p>
@@ -7352,15 +7354,15 @@ The default value is <code>0</code>.</p>
     <div class="algorithm-steps algorithm" data-algorithm="split">
      <ol>
       <li data-md>
-       <p>If <var>input</var> is not an instance of <code class="idl"><a data-link-type="idl" href="#mloperand" id="ref-for-mloperand③⑤⑧">MLOperand</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪④">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③②">DOMException</a></code> and stop.</p>
+       <p>If <var>input</var> is not an instance of <code class="idl"><a data-link-type="idl" href="#mloperand" id="ref-for-mloperand③⑤⑧">MLOperand</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪④">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③③">DOMException</a></code> and stop.</p>
       <li data-md>
        <p>If <var>options</var> is <code>undefined</code>, let <var>options</var> be an empty <a data-link-type="dfn" href="https://w3c.github.io/FileAPI/#blob-url-entry-object" id="ref-for-blob-url-entry-object②⑧">object</a>.</p>
       <li data-md>
        <p>If <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mlsplitoptions-axis" id="ref-for-dom-mlsplitoptions-axis①">axis</a></code> is <code>undefined</code>, let <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mlsplitoptions-axis" id="ref-for-dom-mlsplitoptions-axis②">axis</a></code> be <code>0</code>.</p>
       <li data-md>
-       <p>If <var>splits</var> is not <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-unsigned-long" id="ref-for-idl-unsigned-long⑧⓪">unsigned long</a></code> or a sequence of <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-unsigned-long" id="ref-for-idl-unsigned-long⑧①">unsigned long</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪⑤">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③③">DOMException</a></code> and stop.</p>
+       <p>If <var>splits</var> is not <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-unsigned-long" id="ref-for-idl-unsigned-long⑧⓪">unsigned long</a></code> or a sequence of <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-unsigned-long" id="ref-for-idl-unsigned-long⑧①">unsigned long</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪⑤">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③④">DOMException</a></code> and stop.</p>
       <li data-md>
-       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④⑤">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③④">DOMException</a></code> and stop.</p>
+       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④⑤">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⑤">DOMException</a></code> and stop.</p>
        <ol>
         <li data-md>
          <p>Let <var>output</var> be the result of invoking the <a data-link-type="dfn" href="#copy-mloperand" id="ref-for-copy-mloperand①⑤">copy MLOperand</a> steps given <var>input</var>.</p>
@@ -7440,25 +7442,25 @@ When not specified, every shape dimensions of size 1 in the tensor are eliminate
     <div class="algorithm-steps algorithm" data-algorithm="squeeze">
      <ol>
       <li data-md>
-       <p>If <var>input</var> is not an instance of <code class="idl"><a data-link-type="idl" href="#mloperand" id="ref-for-mloperand③⑥③">MLOperand</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪⑥">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⑤">DOMException</a></code> and stop.</p>
+       <p>If <var>input</var> is not an instance of <code class="idl"><a data-link-type="idl" href="#mloperand" id="ref-for-mloperand③⑥③">MLOperand</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪⑥">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⑥">DOMException</a></code> and stop.</p>
       <li data-md>
        <p>If <var>options</var> is <code>undefined</code>, let <var>options</var> be an empty <a data-link-type="dfn" href="https://w3c.github.io/FileAPI/#blob-url-entry-object" id="ref-for-blob-url-entry-object②⑨">object</a>.</p>
       <li data-md>
        <p>If <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mlsqueezeoptions-axes" id="ref-for-dom-mlsqueezeoptions-axes①">axes</a></code> <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists④②">exists</a>, then:</p>
        <ol>
         <li data-md>
-         <p>Let <var>dimensions</var> be <var>input</var>.<code class="idl"><a data-link-type="idl" href="#dom-mloperand-descriptor-slot" id="ref-for-dom-mloperand-descriptor-slot⑦③">[[descriptor]]</a></code>.<code class="idl"><a data-link-type="idl" href="#dom-mloperanddescriptor-dimensions" id="ref-for-dom-mloperanddescriptor-dimensions⑦⑧">dimensions</a></code>.</p>
+         <p>Let <var>dimensions</var> be <var>input</var>.<code class="idl"><a data-link-type="idl" href="#dom-mloperand-descriptor-slot" id="ref-for-dom-mloperand-descriptor-slot⑦④">[[descriptor]]</a></code>.<code class="idl"><a data-link-type="idl" href="#dom-mloperanddescriptor-dimensions" id="ref-for-dom-mloperanddescriptor-dimensions⑦⑨">dimensions</a></code>.</p>
         <li data-md>
          <p>For <var>index</var> between 0 and the size of <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mlsqueezeoptions-axes" id="ref-for-dom-mlsqueezeoptions-axes②">axes</a></code>:</p>
          <ol>
           <li data-md>
            <p>Let <var>oneDimIndex</var> be <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mlsqueezeoptions-axes" id="ref-for-dom-mlsqueezeoptions-axes③">axes</a></code>[<var>index</var>].</p>
           <li data-md>
-           <p>If <var>dimensions</var>[<var>oneDimIndex</var>] is not <code>1</code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪⑦">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⑥">DOMException</a></code> and stop.</p>
+           <p>If <var>dimensions</var>[<var>oneDimIndex</var>] is not <code>1</code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪⑦">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⑦">DOMException</a></code> and stop.</p>
          </ol>
        </ol>
       <li data-md>
-       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④⑥">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⑦">DOMException</a></code> and stop.</p>
+       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④⑥">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⑧">DOMException</a></code> and stop.</p>
        <ol>
         <li data-md>
          <p>Let <var>output</var> be the result of invoking the <a data-link-type="dfn" href="#copy-mloperand" id="ref-for-copy-mloperand①⑥">copy MLOperand</a> steps given <var>input</var>.</p>
@@ -7521,9 +7523,9 @@ When not specified, every shape dimensions of size 1 in the tensor are eliminate
     <div class="algorithm-steps algorithm" data-algorithm="tanh-input">
      <ol>
       <li data-md>
-       <p>If <var>input</var> is not an instance of <code class="idl"><a data-link-type="idl" href="#mloperand" id="ref-for-mloperand③⑥⑧">MLOperand</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪⑧">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⑧">DOMException</a></code> and stop.</p>
+       <p>If <var>input</var> is not an instance of <code class="idl"><a data-link-type="idl" href="#mloperand" id="ref-for-mloperand③⑥⑧">MLOperand</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪⑧">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⑨">DOMException</a></code> and stop.</p>
       <li data-md>
-       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④⑦">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②③⑨">DOMException</a></code> and stop.</p>
+       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④⑦">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④⓪">DOMException</a></code> and stop.</p>
        <ol>
         <li data-md>
          <p>Let <var>output</var> be the result of invoking the <a data-link-type="dfn" href="#copy-mloperand" id="ref-for-copy-mloperand①⑦">copy MLOperand</a> steps given <var>input</var>.</p>
@@ -7611,25 +7613,25 @@ These default values cause the output to become a transposed tensor of the input
     <div class="algorithm-steps algorithm" data-algorithm="transpose">
      <ol>
       <li data-md>
-       <p>If <var>input</var> is not an instance of <code class="idl"><a data-link-type="idl" href="#mloperand" id="ref-for-mloperand③⑦③">MLOperand</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪⑨">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④⓪">DOMException</a></code> and stop.</p>
+       <p>If <var>input</var> is not an instance of <code class="idl"><a data-link-type="idl" href="#mloperand" id="ref-for-mloperand③⑦③">MLOperand</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①⓪⑨">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④①">DOMException</a></code> and stop.</p>
       <li data-md>
        <p>If <var>options</var> is <code>undefined</code>, let <var>options</var> be an empty <a data-link-type="dfn" href="https://w3c.github.io/FileAPI/#blob-url-entry-object" id="ref-for-blob-url-entry-object③⓪">object</a>.</p>
       <li data-md>
-       <p>If <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation①">permutation</a></code> is <code>undefined</code>, let <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation②">permutation</a></code> be the reversed sequence of all indices for <var>input</var>.<code class="idl"><a data-link-type="idl" href="#dom-mloperand-descriptor-slot" id="ref-for-dom-mloperand-descriptor-slot⑦④">[[descriptor]]</a></code>.<code class="idl"><a data-link-type="idl" href="#dom-mloperanddescriptor-dimensions" id="ref-for-dom-mloperanddescriptor-dimensions⑦⑨">dimensions</a></code>.</p>
+       <p>If <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation①">permutation</a></code> is <code>undefined</code>, let <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation②">permutation</a></code> be the reversed sequence of all indices for <var>input</var>.<code class="idl"><a data-link-type="idl" href="#dom-mloperand-descriptor-slot" id="ref-for-dom-mloperand-descriptor-slot⑦⑤">[[descriptor]]</a></code>.<code class="idl"><a data-link-type="idl" href="#dom-mloperanddescriptor-dimensions" id="ref-for-dom-mloperanddescriptor-dimensions⑧⓪">dimensions</a></code>.</p>
       <li data-md>
        <p>Otherwise if <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation③">permutation</a></code> <a data-link-type="dfn" href="https://infra.spec.whatwg.org/#map-exists" id="ref-for-map-exists④③">exists</a>:</p>
        <ol>
         <li data-md>
-         <p>If <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation④">permutation</a></code> is not a sequence of <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-unsigned-long" id="ref-for-idl-unsigned-long⑧⑥">unsigned long</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①①⓪">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④①">DOMException</a></code> and stop.</p>
+         <p>If <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation④">permutation</a></code> is not a sequence of <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-unsigned-long" id="ref-for-idl-unsigned-long⑧⑥">unsigned long</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①①⓪">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④②">DOMException</a></code> and stop.</p>
         <li data-md>
-         <p>If the rank of <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation⑤">permutation</a></code> is not the same as the rank of <var>input</var>.<code class="idl"><a data-link-type="idl" href="#dom-mloperand-descriptor-slot" id="ref-for-dom-mloperand-descriptor-slot⑦⑤">[[descriptor]]</a></code>.<code class="idl"><a data-link-type="idl" href="#dom-mloperanddescriptor-dimensions" id="ref-for-dom-mloperanddescriptor-dimensions⑧⓪">dimensions</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①①①">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④②">DOMException</a></code> and stop.</p>
+         <p>If the rank of <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation⑤">permutation</a></code> is not the same as the rank of <var>input</var>.<code class="idl"><a data-link-type="idl" href="#dom-mloperand-descriptor-slot" id="ref-for-dom-mloperand-descriptor-slot⑦⑥">[[descriptor]]</a></code>.<code class="idl"><a data-link-type="idl" href="#dom-mloperanddescriptor-dimensions" id="ref-for-dom-mloperanddescriptor-dimensions⑧①">dimensions</a></code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①①①">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④③">DOMException</a></code> and stop.</p>
         <li data-md>
-         <p>If the values in <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation⑥">permutation</a></code> are not between <code>0</code> and the rank of <var>input</var>.<code class="idl"><a data-link-type="idl" href="#dom-mloperand-descriptor-slot" id="ref-for-dom-mloperand-descriptor-slot⑦⑥">[[descriptor]]</a></code>.<code class="idl"><a data-link-type="idl" href="#dom-mloperanddescriptor-dimensions" id="ref-for-dom-mloperanddescriptor-dimensions⑧①">dimensions</a></code> minus <code>1</code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①①②">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④③">DOMException</a></code> and stop.</p>
+         <p>If the values in <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation⑥">permutation</a></code> are not between <code>0</code> and the rank of <var>input</var>.<code class="idl"><a data-link-type="idl" href="#dom-mloperand-descriptor-slot" id="ref-for-dom-mloperand-descriptor-slot⑦⑦">[[descriptor]]</a></code>.<code class="idl"><a data-link-type="idl" href="#dom-mloperanddescriptor-dimensions" id="ref-for-dom-mloperanddescriptor-dimensions⑧②">dimensions</a></code> minus <code>1</code>, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①①②">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④④">DOMException</a></code> and stop.</p>
         <li data-md>
-         <p>If the values in <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation⑦">permutation</a></code> contain duplicate value, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①①③">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④④">DOMException</a></code> and stop.</p>
+         <p>If the values in <var>options</var>.<code class="idl"><a data-link-type="idl" href="#dom-mltransposeoptions-permutation" id="ref-for-dom-mltransposeoptions-permutation⑦">permutation</a></code> contain duplicate value, then throw a "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#exceptiondef-typeerror" id="ref-for-exceptiondef-typeerror①①③">TypeError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④⑤">DOMException</a></code> and stop.</p>
        </ol>
       <li data-md>
-       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④⑧">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④⑤">DOMException</a></code> and stop.</p>
+       <p>If any of the following sub-steps fail, throw an "<code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#operationerror" id="ref-for-operationerror④⑧">OperationError</a></code>" <code class="idl"><a data-link-type="idl" href="https://webidl.spec.whatwg.org/#idl-DOMException" id="ref-for-idl-DOMException②④⑥">DOMException</a></code> and stop.</p>
        <ol>
         <li data-md>
          <p>Let <var>output</var> be the result of invoking the <a data-link-type="dfn" href="#copy-mloperand" id="ref-for-copy-mloperand①⑧">copy MLOperand</a> steps given <var>input</var>.</p>
@@ -8682,14 +8684,14 @@ Benjamin Poulain for their contributions to the API specification.</p>
     <li><a href="#ref-for-idl-DOMException②①③">7.6.30. The reshape() method</a> <a href="#ref-for-idl-DOMException②①④">(2)</a> <a href="#ref-for-idl-DOMException②①⑤">(3)</a> <a href="#ref-for-idl-DOMException②①⑥">(4)</a> <a href="#ref-for-idl-DOMException②①⑦">(5)</a> <a href="#ref-for-idl-DOMException②①⑧">(6)</a>
     <li><a href="#ref-for-idl-DOMException②①⑨">7.6.31.1. The sigmoid(input) method</a> <a href="#ref-for-idl-DOMException②②⓪">(2)</a>
     <li><a href="#ref-for-idl-DOMException②②①">7.6.32. The slice() method</a> <a href="#ref-for-idl-DOMException②②②">(2)</a> <a href="#ref-for-idl-DOMException②②③">(3)</a> <a href="#ref-for-idl-DOMException②②④">(4)</a>
-    <li><a href="#ref-for-idl-DOMException②②⑤">7.6.33.1. The softmax(input) method</a> <a href="#ref-for-idl-DOMException②②⑥">(2)</a>
-    <li><a href="#ref-for-idl-DOMException②②⑦">7.6.34.1. The softplus(input, options) method</a> <a href="#ref-for-idl-DOMException②②⑧">(2)</a>
-    <li><a href="#ref-for-idl-DOMException②②⑨">7.6.34.2. The softplus(options) method</a>
-    <li><a href="#ref-for-idl-DOMException②③⓪">7.6.35.1. The softsign(input) method</a> <a href="#ref-for-idl-DOMException②③①">(2)</a>
-    <li><a href="#ref-for-idl-DOMException②③②">7.6.36. The split() method</a> <a href="#ref-for-idl-DOMException②③③">(2)</a> <a href="#ref-for-idl-DOMException②③④">(3)</a>
-    <li><a href="#ref-for-idl-DOMException②③⑤">7.6.37. The squeeze() method</a> <a href="#ref-for-idl-DOMException②③⑥">(2)</a> <a href="#ref-for-idl-DOMException②③⑦">(3)</a>
-    <li><a href="#ref-for-idl-DOMException②③⑧">7.6.38.1. The tanh(input) method</a> <a href="#ref-for-idl-DOMException②③⑨">(2)</a>
-    <li><a href="#ref-for-idl-DOMException②④⓪">7.6.39. The transpose() method</a> <a href="#ref-for-idl-DOMException②④①">(2)</a> <a href="#ref-for-idl-DOMException②④②">(3)</a> <a href="#ref-for-idl-DOMException②④③">(4)</a> <a href="#ref-for-idl-DOMException②④④">(5)</a> <a href="#ref-for-idl-DOMException②④⑤">(6)</a>
+    <li><a href="#ref-for-idl-DOMException②②⑤">7.6.33.1. The softmax(input) method</a> <a href="#ref-for-idl-DOMException②②⑥">(2)</a> <a href="#ref-for-idl-DOMException②②⑦">(3)</a>
+    <li><a href="#ref-for-idl-DOMException②②⑧">7.6.34.1. The softplus(input, options) method</a> <a href="#ref-for-idl-DOMException②②⑨">(2)</a>
+    <li><a href="#ref-for-idl-DOMException②③⓪">7.6.34.2. The softplus(options) method</a>
+    <li><a href="#ref-for-idl-DOMException②③①">7.6.35.1. The softsign(input) method</a> <a href="#ref-for-idl-DOMException②③②">(2)</a>
+    <li><a href="#ref-for-idl-DOMException②③③">7.6.36. The split() method</a> <a href="#ref-for-idl-DOMException②③④">(2)</a> <a href="#ref-for-idl-DOMException②③⑤">(3)</a>
+    <li><a href="#ref-for-idl-DOMException②③⑥">7.6.37. The squeeze() method</a> <a href="#ref-for-idl-DOMException②③⑦">(2)</a> <a href="#ref-for-idl-DOMException②③⑧">(3)</a>
+    <li><a href="#ref-for-idl-DOMException②③⑨">7.6.38.1. The tanh(input) method</a> <a href="#ref-for-idl-DOMException②④⓪">(2)</a>
+    <li><a href="#ref-for-idl-DOMException②④①">7.6.39. The transpose() method</a> <a href="#ref-for-idl-DOMException②④②">(2)</a> <a href="#ref-for-idl-DOMException②④③">(3)</a> <a href="#ref-for-idl-DOMException②④④">(4)</a> <a href="#ref-for-idl-DOMException②④⑤">(5)</a> <a href="#ref-for-idl-DOMException②④⑥">(6)</a>
    </ul>
   </aside>
   <aside aria-labelledby="infopaneltitle-for-d0f238a61de9310f1738a214749fab18" class="dfn-panel" data-for="d0f238a61de9310f1738a214749fab18" id="infopanel-for-d0f238a61de9310f1738a214749fab18">
@@ -8722,6 +8724,7 @@ Benjamin Poulain for their contributions to the API specification.</p>
     <li><a href="#ref-for-dataerror⑥⑨">7.6.25. Pooling operations</a> <a href="#ref-for-dataerror⑦⓪">(2)</a> <a href="#ref-for-dataerror⑦①">(3)</a> <a href="#ref-for-dataerror⑦②">(4)</a> <a href="#ref-for-dataerror⑦③">(5)</a> <a href="#ref-for-dataerror⑦④">(6)</a>
     <li><a href="#ref-for-dataerror⑦⑤">7.6.29. The resample2d() method</a> <a href="#ref-for-dataerror⑦⑥">(2)</a> <a href="#ref-for-dataerror⑦⑦">(3)</a>
     <li><a href="#ref-for-dataerror⑦⑧">7.6.30. The reshape() method</a> <a href="#ref-for-dataerror⑦⑨">(2)</a> <a href="#ref-for-dataerror⑧⓪">(3)</a> <a href="#ref-for-dataerror⑧①">(4)</a>
+    <li><a href="#ref-for-dataerror⑧②">7.6.33.1. The softmax(input) method</a>
    </ul>
   </aside>
   <aside aria-labelledby="infopaneltitle-for-dde049eb112f043fc45407ec0d4cb457" class="dfn-panel" data-for="dde049eb112f043fc45407ec0d4cb457" id="infopanel-for-dde049eb112f043fc45407ec0d4cb457">
@@ -10134,8 +10137,9 @@ Benjamin Poulain for their contributions to the API specification.</p>
     <li><a href="#ref-for-dom-mloperanddescriptor-dimensions⑥⑧">7.6.26. The prelu() method</a> <a href="#ref-for-dom-mloperanddescriptor-dimensions⑥⑨">(2)</a> <a href="#ref-for-dom-mloperanddescriptor-dimensions⑦⓪">(3)</a>
     <li><a href="#ref-for-dom-mloperanddescriptor-dimensions⑦①">7.6.29. The resample2d() method</a> <a href="#ref-for-dom-mloperanddescriptor-dimensions⑦②">(2)</a> <a href="#ref-for-dom-mloperanddescriptor-dimensions⑦③">(3)</a> <a href="#ref-for-dom-mloperanddescriptor-dimensions⑦④">(4)</a> <a href="#ref-for-dom-mloperanddescriptor-dimensions⑦⑤">(5)</a>
     <li><a href="#ref-for-dom-mloperanddescriptor-dimensions⑦⑥">7.6.30. The reshape() method</a> <a href="#ref-for-dom-mloperanddescriptor-dimensions⑦⑦">(2)</a>
-    <li><a href="#ref-for-dom-mloperanddescriptor-dimensions⑦⑧">7.6.37. The squeeze() method</a>
-    <li><a href="#ref-for-dom-mloperanddescriptor-dimensions⑦⑨">7.6.39. The transpose() method</a> <a href="#ref-for-dom-mloperanddescriptor-dimensions⑧⓪">(2)</a> <a href="#ref-for-dom-mloperanddescriptor-dimensions⑧①">(3)</a>
+    <li><a href="#ref-for-dom-mloperanddescriptor-dimensions⑦⑧">7.6.33.1. The softmax(input) method</a>
+    <li><a href="#ref-for-dom-mloperanddescriptor-dimensions⑦⑨">7.6.37. The squeeze() method</a>
+    <li><a href="#ref-for-dom-mloperanddescriptor-dimensions⑧⓪">7.6.39. The transpose() method</a> <a href="#ref-for-dom-mloperanddescriptor-dimensions⑧①">(2)</a> <a href="#ref-for-dom-mloperanddescriptor-dimensions⑧②">(3)</a>
    </ul>
   </aside>
   <aside aria-labelledby="infopaneltitle-for-mloperanddescriptor-byte-length" class="dfn-panel" data-for="mloperanddescriptor-byte-length" id="infopanel-for-mloperanddescriptor-byte-length">
@@ -10238,8 +10242,9 @@ Benjamin Poulain for their contributions to the API specification.</p>
     <li><a href="#ref-for-dom-mloperand-descriptor-slot⑥③">7.6.26. The prelu() method</a> <a href="#ref-for-dom-mloperand-descriptor-slot⑥④">(2)</a> <a href="#ref-for-dom-mloperand-descriptor-slot⑥⑤">(3)</a>
     <li><a href="#ref-for-dom-mloperand-descriptor-slot⑥⑥">7.6.29. The resample2d() method</a> <a href="#ref-for-dom-mloperand-descriptor-slot⑥⑦">(2)</a> <a href="#ref-for-dom-mloperand-descriptor-slot⑥⑧">(3)</a> <a href="#ref-for-dom-mloperand-descriptor-slot⑥⑨">(4)</a> <a href="#ref-for-dom-mloperand-descriptor-slot⑦⓪">(5)</a>
     <li><a href="#ref-for-dom-mloperand-descriptor-slot⑦①">7.6.30. The reshape() method</a> <a href="#ref-for-dom-mloperand-descriptor-slot⑦②">(2)</a>
-    <li><a href="#ref-for-dom-mloperand-descriptor-slot⑦③">7.6.37. The squeeze() method</a>
-    <li><a href="#ref-for-dom-mloperand-descriptor-slot⑦④">7.6.39. The transpose() method</a> <a href="#ref-for-dom-mloperand-descriptor-slot⑦⑤">(2)</a> <a href="#ref-for-dom-mloperand-descriptor-slot⑦⑥">(3)</a>
+    <li><a href="#ref-for-dom-mloperand-descriptor-slot⑦③">7.6.33.1. The softmax(input) method</a>
+    <li><a href="#ref-for-dom-mloperand-descriptor-slot⑦④">7.6.37. The squeeze() method</a>
+    <li><a href="#ref-for-dom-mloperand-descriptor-slot⑦⑤">7.6.39. The transpose() method</a> <a href="#ref-for-dom-mloperand-descriptor-slot⑦⑥">(2)</a> <a href="#ref-for-dom-mloperand-descriptor-slot⑦⑦">(3)</a>
    </ul>
   </aside>
   <aside aria-labelledby="infopaneltitle-for-dom-mloperand-name-slot" class="dfn-panel" data-for="dom-mloperand-name-slot" id="infopanel-for-dom-mloperand-name-slot">
